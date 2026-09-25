@@ -1,0 +1,3 @@
+Cebuano (Bisaya) has ~20M speakers and has no public offline NMT model. So for my @qvac SDK build, I skipped translate() entirely and drove a local LLM through loadModel() + completion() with a translator-only system prompt. Fully on-device, no API key, no cloud.
+
+Honest note from testing both directions: this is completion()-based, not NMT, so register drifts run-to-run (formal Sinugboanon vs. casual Bisaya), idioms sometimes come out as literal calques, and short/context-free input is where it's weakest. Cebuano→English is the more reliable direction. Good for everyday phrases, not a substitute for a native speaker.
