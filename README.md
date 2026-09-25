@@ -7,9 +7,13 @@ Cebuano (Sinugboanon), also known as Bisaya, is spoken by over 20 million people
 ## Features
 
 - English &rarr; Cebuano and Cebuano &rarr; English, in one interactive session
+
 - 100% on-device inference &mdash; no server, no API key, nothing leaves your machine
+
 - Uses Tether's QVAC SDK (`loadModel` + `completion` + `unloadModel`)
+
 - Streams tokens live to the terminal as they're generated
+
 - Simple command-line interface, plus a non-interactive `--demo` mode
 
 ## Why use `completion()` instead of `translate()`?
@@ -64,8 +68,11 @@ The first run downloads the model (a few hundred MB to ~1 GB depending on quanti
 ## How it works
 
 1. `loadModel()` loads `QWEN3_1_7B_INST_Q4` on-device.
+
 2. Each translation request builds a two-message `history`: a `system` message that pins the model to translator-only behavior for the chosen language pair, and a `user` message with the text to translate.
+
 3. `completion({ modelId, history, stream: true })` streams the translation back token by token via `run.events`.
+
 4. `unloadModel()` frees the model from memory when the session ends.
 
 See [`index.js`](./index.js) for the full implementation.
