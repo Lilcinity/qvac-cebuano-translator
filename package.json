@@ -9,7 +9,8 @@
   },
   "scripts": {
     "start": "node index.js",
-    "demo": "node index.js --demo"
+    "demo": "node index.js --demo",
+    "web": "node server.js"
   },
   "repository": {
     "type": "git",

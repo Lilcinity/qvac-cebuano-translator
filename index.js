@@ -1,4 +1,4 @@
-// QVAC Cebuano Translator
+// QVAC Cebuano Translator -- CLI
 //
 // An offline English <-> Cebuano (Bisaya) translator that runs entirely
 // on-device using Tether's QVAC SDK. No API key, no cloud calls, nothing
@@ -14,62 +14,24 @@
 // way to cover a low-resource language pair fully offline today.
 //
 // Usage:
-//   node index.js            interactive mode
+//   node index.js            interactive CLI
 //   node index.js --demo     non-interactive demo (both directions, then exit)
+//   node server.js           web UI instead of the CLI (see README)
 
-import { loadModel, completion, unloadModel, QWEN3_1_7B_INST_Q4 } from '@qvac/sdk';
 import readline from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
-
-const DIRECTIONS = {
-  1: { from: 'English', to: 'Cebuano', label: 'English -> Cebuano' },
-  2: { from: 'Cebuano', to: 'English', label: 'Cebuano -> English' }
-};
+import { DIRECTIONS, loadTranslationModel, translate, unloadTranslationModel } from './lib/qvac.js';
 
 const DEMO_SENTENCES = {
   1: 'Hello! Running artificial intelligence locally on your device protects your privacy.',
   2: 'Maayong buntag! Kumusta ka karon? Naglaom ko nga malipayon ang imong adlaw.'
 };
 
-// Known limitation: because Cebuano is low-resource for this model, output
-// register and idiom handling can vary between runs and isn't as reliable
-// as a dedicated NMT model would be. See README "Known limitations" section.
-function systemPrompt(from, to) {
-  return (
-    `You are an expert bilingual translator specializing in ${from} and ${to}. ` +
-    `Cebuano (also called Bisaya or Sinugboanon) is an Austronesian language spoken ` +
-    `by over 20 million people, mainly in Central Visayas and Mindanao, Philippines. ` +
-    `Translate the user's ${from} text into natural, fluent, everyday ${to}, preserving ` +
-    `tone and meaning. Reply with ONLY the translation -- no explanations, no notes, ` +
-    `no transliteration, no quotation marks. /no_think`
-  );
-}
-
 function onProgress(p) {
   const mb = (n) => (n / 1e6).toFixed(1);
   const line = `  downloading model: ${p.percentage.toFixed(0)}% (${mb(p.downloaded)}/${mb(p.total)} MB)`;
   process.stderr.write(process.stderr.isTTY ? `\r${line}` : `${line}\n`);
   if (p.percentage >= 100) process.stderr.write('\n');
-}
-
-async function translate(modelId, text, directionKey) {
-  const { from, to } = DIRECTIONS[directionKey];
-  const history = [
-    { role: 'system', content: systemPrompt(from, to) },
-    { role: 'user', content: text }
-  ];
-
-  const run = completion({ modelId, history, stream: true });
-
-  let out = '';
-  for await (const event of run.events) {
-    if (event.type === 'contentDelta') {
-      process.stdout.write(event.text);
-      out += event.text;
-    }
-  }
-  await run.final;
-  return out.trim();
 }
 
 async function runDemo(modelId) {
@@ -79,7 +41,7 @@ async function runDemo(modelId) {
     console.log(`\n=== ${label} ===`);
     console.log(`Source: "${text}"`);
     process.stdout.write('Translation: ');
-    await translate(modelId, text, key);
+    await translate(modelId, text, key, (chunk) => process.stdout.write(chunk));
     console.log('');
   }
 }
@@ -104,7 +66,7 @@ async function runInteractive(modelId) {
     if (!text) continue;
 
     process.stdout.write('\nTranslation: ');
-    await translate(modelId, text, dirAnswer);
+    await translate(modelId, text, dirAnswer, (chunk) => process.stdout.write(chunk));
     console.log('\n');
   }
 
@@ -122,11 +84,7 @@ async function main() {
   console.log('');
   console.log('Loading translation model on-device (Qwen3 1.7B)...');
 
-  const modelId = await loadModel({
-    modelSrc: QWEN3_1_7B_INST_Q4,
-    modelConfig: { ctx_size: 4096 },
-    onProgress
-  });
+  const modelId = await loadTranslationModel(onProgress);
 
   console.log('Model loaded. All inference below runs locally -- no cloud, no API key.');
 
@@ -136,7 +94,7 @@ async function main() {
     await runInteractive(modelId);
   }
 
-  await unloadModel({ modelId });
+  await unloadTranslationModel(modelId);
   console.log('Model unloaded. Salamat sa paggamit! (Thanks for using it!)');
 }
 
