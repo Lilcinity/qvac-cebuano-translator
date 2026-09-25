@@ -6,15 +6,17 @@ Cebuano (Sinugboanon), also known as Bisaya, is spoken by over 20 million people
 
 ## Features
 
-- English &rarr; Cebuano and Cebuano &rarr; English, in one interactive session
+- English &rarr; Cebuano and Cebuano &rarr; English, in one session
+
+- Two front ends sharing one on-device core: a terminal CLI and a local browser UI
 
 - 100% on-device inference &mdash; no server, no API key, nothing leaves your machine
 
 - Uses Tether's QVAC SDK (`loadModel` + `completion` + `unloadModel`)
 
-- Streams tokens live to the terminal as they're generated
+- Streams tokens live as they're generated, in the terminal or in the browser
 
-- Simple command-line interface, plus a non-interactive `--demo` mode
+- Non-interactive `--demo` mode for quick screenshots/recordings
 
 ## Why use `completion()` instead of `translate()`?
 
@@ -40,7 +42,21 @@ cd qvac-cebuano-translator
 npm install
 ```
 
+## Project structure
+
+```
+lib/qvac.js       shared core: the only file that calls @qvac/sdk
+                  (loadModel, completion, unloadModel)
+index.js          CLI front end, imports lib/qvac.js
+server.js         web UI front end, imports lib/qvac.js
+public/index.html the browser page server.js serves
+```
+
+The CLI and the web UI are two front ends over the same on-device pipeline &mdash; neither one talks to `@qvac/sdk` directly, they both go through `lib/qvac.js`.
+
 ## Usage of QVAC Cebuano Translator
+
+### CLI
 
 Interactive mode:
 
@@ -65,30 +81,38 @@ Non-interactive demo (translates one sample sentence in each direction, then exi
 npm run demo
 ```
 
-The first run downloads the model (a few hundred MB to ~1 GB depending on quantization). Thus, it needs no network access.
+### Web UI
+
+```bash
+npm run web
+```
+
+Then open **http://localhost:5173** in your browser. Type a sentence, hit Translate (or Ctrl/Cmd+Enter), and it streams back the same way the CLI does &mdash; because it's calling the same `lib/qvac.js` functions underneath. Use the swap button to flip direction; the "On-device" badge is just there as a reminder that nothing is calling out to a cloud API.
+
+The first run of either front end downloads the model (a few hundred MB to ~1 GB depending on quantization). Every run after that loads it from the local QVAC cache, so it needs no network access at all.
 
 ## How it works
 
-1. `loadModel()` loads `QWEN3_1_7B_INST_Q4` on-device.
+All of this lives in `lib/qvac.js`; `index.js` and `server.js` are just two thin front ends that call it:
 
-2. Each translation request builds a two-message `history`: a `system` message that pins the model to translator-only behavior for the chosen language pair, and a `user` message with the text to translate.
+1. `loadTranslationModel()` calls `loadModel()` to load `QWEN3_1_7B_INST_Q4` on-device, once at startup.
 
-3. `completion({ modelId, history, stream: true })` streams the translation back token by token via `run.events`.
+2. `translate()` builds a two-message `history` per request: a `system` message that pins the model to translator-only behavior for the chosen language pair, and a `user` message with the text to translate.
 
-4. `unloadModel()` frees the model from memory when the session ends.
+3. `completion({ modelId, history, stream: true })` streams the translation back token by token via `run.events`; both front ends forward those tokens as they arrive (to `stdout` in the CLI, over the HTTP response in the web UI).
 
-See [`index.js`](./index.js) for the full implementation.
+4. `unloadTranslationModel()` calls `unloadModel()` to free the model when the session ends.
 
 ## QVAC function calls (source references)
 
-The three required SDK calls, linked directly to the exact lines that make them:
+The three required SDK calls all live in one place, [`lib/qvac.js`](./lib/qvac.js), linked directly to the exact lines that make them:
 
 | Call | Location |
 |---|---|
-| `import { loadModel, completion, unloadModel, QWEN3_1_7B_INST_Q4 } from '@qvac/sdk'` | [index.js#L20](https://github.com/Lilcinity/qvac-cebuano-translator/blob/f41fa0c5c7a94a1bdb6842c933535e5578d8df1f/index.js#L20) |
-| `loadModel({ modelSrc: QWEN3_1_7B_INST_Q4, ... })` | [index.js#L122-L126](https://github.com/Lilcinity/qvac-cebuano-translator/blob/f41fa0c5c7a94a1bdb6842c933535e5578d8df1f/index.js#L122-L126) |
-| `completion({ modelId, history, stream: true })` | [index.js#L59](https://github.com/Lilcinity/qvac-cebuano-translator/blob/f41fa0c5c7a94a1bdb6842c933535e5578d8df1f/index.js#L59) |
-| `unloadModel({ modelId })` | [index.js#L136](https://github.com/Lilcinity/qvac-cebuano-translator/blob/f41fa0c5c7a94a1bdb6842c933535e5578d8df1f/index.js#L136) |
+| `import { loadModel, completion, unloadModel, QWEN3_1_7B_INST_Q4 } from '@qvac/sdk'` | [lib/qvac.js#L9](https://github.com/Lilcinity/qvac-cebuano-translator/blob/7e313a9cd9cf4a0453460fea6eca0dbc1c5d7b20/lib/qvac.js#L9) |
+| `loadModel({ modelSrc: MODEL, ... })` | [lib/qvac.js#L38-L42](https://github.com/Lilcinity/qvac-cebuano-translator/blob/7e313a9cd9cf4a0453460fea6eca0dbc1c5d7b20/lib/qvac.js#L38-L42) |
+| `completion({ modelId, history, stream: true })` | [lib/qvac.js#L68](https://github.com/Lilcinity/qvac-cebuano-translator/blob/7e313a9cd9cf4a0453460fea6eca0dbc1c5d7b20/lib/qvac.js#L68) |
+| `unloadModel({ modelId })` | [lib/qvac.js#L50](https://github.com/Lilcinity/qvac-cebuano-translator/blob/7e313a9cd9cf4a0453460fea6eca0dbc1c5d7b20/lib/qvac.js#L50) |
 
 ## Known limitations: translation quality is inconsistent
 
@@ -105,6 +129,22 @@ To be transparent/upfront: because there's no dedicated NMT checkpoint for Cebua
 - **No confidence signal.** A real NMT model can expose beam/confidence scores. `completion()` gives you fluent-looking text either way, so a wrong translation doesn't "look" any less confident than a correct one &mdash; don't take fluency as a proxy for accuracy.
 
 Cebuano &rarr; English is generally more reliable direction, since English dominates the model's training data on the output side. Treat this as a good tool for everyday phrases and getting the gist, not as a substitute for a native speaker or a professional translator for anything official, legal, or medical.
+
+## Troubleshooting
+
+**`Error [ERR_MODULE_NOT_FOUND]: Cannot find package '@qvac/sdk'`**
+
+This means Node is running `index.js` (or `server.js`) on its own, outside the project &mdash; commonly because only that one file was downloaded (e.g. from a browser's "Save As" into `Downloads`), without `package.json` and without running `npm install`. `@qvac/sdk` is a dependency declared in `package.json`; it only exists once npm has installed it into a `node_modules` folder next to that `package.json`.
+
+Fix: don't run a lone downloaded file. Clone (or download) the *whole* repository, then from inside that folder:
+
+```bash
+cd qvac-cebuano-translator
+npm install
+npm start
+```
+
+If `node_modules` already exists but the error persists, you're likely running the command from the wrong directory &mdash; `cd` into the folder that contains `package.json` first.
 
 ## License
 
