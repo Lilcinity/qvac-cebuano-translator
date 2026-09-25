@@ -81,6 +81,18 @@ The three required SDK calls, linked directly to the exact lines that make them:
 | `completion({ modelId, history, stream: true })` | [index.js#L59](https://github.com/Lilcinity/qvac-cebuano-translator/blob/f41fa0c5c7a94a1bdb6842c933535e5578d8df1f/index.js#L59) |
 | `unloadModel({ modelId })` | [index.js#L136](https://github.com/Lilcinity/qvac-cebuano-translator/blob/f41fa0c5c7a94a1bdb6842c933535e5578d8df1f/index.js#L136) |
 
+## Known limitations: translation quality is inconsistent
+
+Being upfront about this: because there's no dedicated NMT checkpoint for Cebuano, this app leans on a general-purpose multilingual LLM through `completion()`, and that trade-off shows up in the output. Specific issues observed while testing both directions:
+
+- **Register drifts between runs.** The same English sentence translated twice can come back once in fairly formal/"deep" Sinugboanon and once in casual Bisaya slang, because sampling isn't deterministic and Cebuano has much less training data to anchor a consistent register than English does.
+- **Code-switching is handled unevenly.** Real spoken Cebuano mixes in a lot of English and Tagalog loanwords. The model sometimes over-corrects into overly formal Cebuano a native speaker wouldn't actually use, and sometimes leaves English words untranslated instead of picking the natural Cebuano equivalent.
+- **Idioms often come out literal.** English figures of speech get calque-translated word-for-word more often than they're mapped to an equivalent Cebuano expression, simply because there isn't enough parallel idiom data for this pair.
+- **Short, context-free input is the weakest case.** Cebuano relies heavily on particles (`na`, `pa`, `gyud`, `man`, etc.) and context to disambiguate meaning; single words or short fragments (in either direction) are where mistranslations are most likely.
+- **No confidence signal.** A real NMT model can expose beam/confidence scores. `completion()` gives you fluent-looking text either way, so a wrong translation doesn't "look" any less confident than a correct one &mdash; don't take fluency as a proxy for accuracy.
+
+Cebuano &rarr; English is generally the more reliable direction, since English dominates the model's training data on the output side. Treat this as a good tool for everyday phrases and getting the gist, not as a substitute for a native speaker or a professional translator for anything official, legal, or medical.
+
 ## License
 
 MIT &mdash; see [LICENSE](./LICENSE).

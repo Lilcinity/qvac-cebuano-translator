@@ -31,6 +31,9 @@ const DEMO_SENTENCES = {
   2: 'Maayong buntag! Kumusta ka karon? Naglaom ko nga malipayon ang imong adlaw.'
 };
 
+// Known limitation: because Cebuano is low-resource for this model, output
+// register and idiom handling can vary between runs and isn't as reliable
+// as a dedicated NMT model would be. See README "Known limitations" section.
 function systemPrompt(from, to) {
   return (
     `You are an expert bilingual translator specializing in ${from} and ${to}. ` +
