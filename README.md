@@ -40,7 +40,7 @@ cd qvac-cebuano-translator
 npm install
 ```
 
-## Usage
+## Usage of QVAC Cebuano Translator
 
 Interactive mode:
 
@@ -49,15 +49,17 @@ npm start
 ```
 
 You'll be asked to pick a direction, then enter text:
+Example:
 
 ```
 Direction  [1] English -> Cebuano   [2] Cebuano -> English   [q] Quit: 1
+
 Text: Where is the nearest market?
 
 Translation: Asa ang pinakaduol nga merkado?
 ```
 
-Non-interactive demo (translates one sample sentence in each direction, then exits &mdash; useful for a quick screen recording):
+Non-interactive demo (translates one sample sentence in each direction, then exits.
 
 ```bash
 npm run demo
