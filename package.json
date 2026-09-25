@@ -1,0 +1,35 @@
+{
+  "name": "qvac-cebuano-translator",
+  "version": "1.0.0",
+  "description": "Offline English <-> Cebuano (Bisaya) translator powered by Tether's QVAC SDK, running fully on-device.",
+  "main": "index.js",
+  "type": "module",
+  "engines": {
+    "node": ">=22.17"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "demo": "node index.js --demo"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Lilcinity/qvac-cebuano-translator.git"
+  },
+  "keywords": [
+    "qvac",
+    "cebuano",
+    "bisaya",
+    "translation",
+    "on-device-ai",
+    "offline-ai"
+  ],
+  "author": "Lilcinity",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Lilcinity/qvac-cebuano-translator/issues"
+  },
+  "homepage": "https://github.com/Lilcinity/qvac-cebuano-translator#readme",
+  "dependencies": {
+    "@qvac/sdk": "^0.20.0"
+  }
+}
