@@ -2,7 +2,7 @@
 
 An offline English &harr; Cebuano (Bisaya) translator powered by Tether's [QVAC SDK](https://qvac.tether.io). All inference runs locally on your machine, with no API key, no cloud calls, and no data leaving your device.
 
-Cebuano (Sinugboanon), also known as Bisaya, is spoken by over 20 million people across the Central Visayas and Mindanao regions of the Philippines &mdash; but it's a low-resource language for machine translation. There is no public offline NMT model for it yet, so this app takes a different route: it loads a small multilingual LLM and uses QVAC's `completion()` capability with a translation-only system prompt to cover the pair anyway, fully on-device.
+Cebuano (Sinugboanon), also known as Bisaya, is spoken by over 20 million people across the Central Visayas and Mindanao regions of the Philippines &mdash; it remains a low-resource language for machine translation. No public offline NMT model for it yet, so this app takes a different route: it loads a small multilingual LLM. It uses QVAC's `completion()` capability with a translation-only system prompt to cover the pair anyway, fully on-device.
 
 ## Features
 
@@ -12,7 +12,7 @@ Cebuano (Sinugboanon), also known as Bisaya, is spoken by over 20 million people
 - Streams tokens live to the terminal as they're generated
 - Simple command-line interface, plus a non-interactive `--demo` mode
 
-## Why `completion()` instead of `translate()`?
+## Why use `completion()` instead of `translate()`?
 
 QVAC's dedicated NMT engines (Bergamot / nmt.cpp) already ship offline models for dozens of language pairs. Cebuano isn't one of them yet. Rather than skip the language, this app loads `QWEN3_1_7B_INST_Q4` &mdash; a small, multilingual, instruction-tuned LLM &mdash; and drives it with a strict translation-only system prompt through QVAC's `completion()` API. `completion()` is one of QVAC's core supported AI tasks, and this is a practical way to add offline support for a low-resource language today, without needing a dedicated NMT checkpoint.
 
@@ -59,7 +59,7 @@ Non-interactive demo (translates one sample sentence in each direction, then exi
 npm run demo
 ```
 
-The first run downloads the model (a few hundred MB to ~1 GB depending on quantization); every run after that loads it from the local QVAC cache and needs no network access at all.
+The first run downloads the model (a few hundred MB to ~1 GB depending on quantization). Thus, it needs no network access.
 
 ## How it works
 
@@ -83,15 +83,19 @@ The three required SDK calls, linked directly to the exact lines that make them:
 
 ## Known limitations: translation quality is inconsistent
 
-Being upfront about this: because there's no dedicated NMT checkpoint for Cebuano, this app leans on a general-purpose multilingual LLM through `completion()`, and that trade-off shows up in the output. Specific issues observed while testing both directions:
+To be transparent/upfront: because there's no dedicated NMT checkpoint for Cebuano, this app relies on a general-purpose multilingual LLM via a QVAC `completion()` function, and that trade-off shows up in the output. Specific issues observed while testing both directions:
 
 - **Register drifts between runs.** The same English sentence translated twice can come back once in fairly formal/"deep" Sinugboanon and once in casual Bisaya slang, because sampling isn't deterministic and Cebuano has much less training data to anchor a consistent register than English does.
-- **Code-switching is handled unevenly.** Real spoken Cebuano mixes in a lot of English and Tagalog loanwords. The model sometimes over-corrects into overly formal Cebuano a native speaker wouldn't actually use, and sometimes leaves English words untranslated instead of picking the natural Cebuano equivalent.
-- **Idioms often come out literal.** English figures of speech get calque-translated word-for-word more often than they're mapped to an equivalent Cebuano expression, simply because there isn't enough parallel idiom data for this pair.
+  
+- **Code-switching is handled unevenly.** Real spoken Cebuano mixes in a lot of English and Tagalog loanwords. The model sometimes over-corrects into overly formal Cebuano a native speaker wouldn't typically use, and sometimes leaves English words untranslated instead of picking the natural Cebuano equivalent.
+  
+- **Idioms often come out literal.** English figures of speech get calque-translated word-for-word more than they're mapped to an equivalent Cebuano expression, simply because there isn't enough parallel idiom data for this pair.
+  
 - **Short, context-free input is the weakest case.** Cebuano relies heavily on particles (`na`, `pa`, `gyud`, `man`, etc.) and context to disambiguate meaning; single words or short fragments (in either direction) are where mistranslations are most likely.
+  
 - **No confidence signal.** A real NMT model can expose beam/confidence scores. `completion()` gives you fluent-looking text either way, so a wrong translation doesn't "look" any less confident than a correct one &mdash; don't take fluency as a proxy for accuracy.
 
-Cebuano &rarr; English is generally the more reliable direction, since English dominates the model's training data on the output side. Treat this as a good tool for everyday phrases and getting the gist, not as a substitute for a native speaker or a professional translator for anything official, legal, or medical.
+Cebuano &rarr; English is generally more reliable direction, since English dominates the model's training data on the output side. Treat this as a good tool for everyday phrases and getting the gist, not as a substitute for a native speaker or a professional translator for anything official, legal, or medical.
 
 ## License
 
